@@ -38,6 +38,7 @@ mvn.properties
 *.asc
 *.jj
 *.tmp
+target
 maven-resolver-ant-tasks-*.jar
 thumbs.db
 Thumbs.db

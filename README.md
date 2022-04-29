@@ -56,6 +56,10 @@ Please see [RUNNING.txt](RUNNING.txt) for more info.
 
 Please see [LICENSE](LICENSE) for more info.
 
+### Maven Project
+This repository is a maven project, if yours is a ant project and you want
+to change it to a maven project please see[MAVEN.txt](MAVEN.md) for more info.
+
 ### Support and Mailing List Information
 
 * Free community support is available through the
