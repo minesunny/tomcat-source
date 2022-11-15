@@ -17,7 +17,6 @@
 package jakarta.el;
 
 import java.beans.BeanInfo;
-import java.beans.FeatureDescriptor;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -25,14 +24,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Standard ELResolver for working with JavaBeans.
+ */
 public class BeanELResolver extends ELResolver {
 
     private static final int CACHE_SIZE;
@@ -53,10 +53,19 @@ public class BeanELResolver extends ELResolver {
 
     private final ConcurrentCache<String, BeanProperties> cache = new ConcurrentCache<>(CACHE_SIZE);
 
+    /**
+     * Creates a writable instance of the standard JavaBean resolver.
+     */
     public BeanELResolver() {
         this.readOnly = false;
     }
 
+    /**
+     * Creates an instance of the standard JavaBean resolver.
+     *
+     * @param readOnly  {@code true} if the created instance should be read-only
+     *                  otherwise false.
+     */
     public BeanELResolver(boolean readOnly) {
         this.readOnly = readOnly;
     }
@@ -174,28 +183,6 @@ public class BeanELResolver extends ELResolver {
         return this.readOnly || this.property(context, base, property).isReadOnly(base);
     }
 
-    @Deprecated(forRemoval = true, since = "EL 5.0")
-    @Override
-    public Iterator<FeatureDescriptor> getFeatureDescriptors(ELContext context, Object base) {
-        if (base == null) {
-            return null;
-        }
-
-        try {
-            BeanInfo info = Introspector.getBeanInfo(base.getClass());
-            PropertyDescriptor[] pds = info.getPropertyDescriptors();
-            for (PropertyDescriptor pd : pds) {
-                pd.setValue(RESOLVABLE_AT_DESIGN_TIME, Boolean.TRUE);
-                pd.setValue(TYPE, pd.getPropertyType());
-            }
-            return Arrays.asList((FeatureDescriptor[]) pds).iterator();
-        } catch (IntrospectionException e) {
-            //
-        }
-
-        return null;
-    }
-
     @Override
     public Class<?> getCommonPropertyType(ELContext context, Object base) {
         if (base != null) {
@@ -219,7 +206,7 @@ public class BeanELResolver extends ELResolver {
                 for (PropertyDescriptor pd: pds) {
                     this.properties.put(pd.getName(), new BeanProperty(type, pd));
                 }
-                /**
+                /*
                  * Populating from any interfaces solves two distinct problems:
                  * 1. When running under a security manager, classes may be
                  *    unaccessible but have accessible interfaces.

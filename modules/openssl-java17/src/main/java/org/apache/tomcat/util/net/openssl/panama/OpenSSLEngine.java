@@ -57,6 +57,7 @@ import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.foreign.SegmentAllocator;
 
 import static org.apache.tomcat.util.openssl.openssl_h.*;
+import static org.apache.tomcat.util.openssl.openssl_compat_h.*;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -966,7 +967,7 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
 
     private byte[] getPeerCertificate() {
         var allocator = SegmentAllocator.ofScope(engineScope);
-        MemoryAddress/*(X509*)*/ x509 = SSL_get_peer_certificate(state.ssl);
+        MemoryAddress/*(X509*)*/ x509 = (OpenSSLContext.OPENSSL_3 ? SSL_get1_peer_certificate(state.ssl) : SSL_get_peer_certificate(state.ssl));
         MemorySegment bufPointer = allocator.allocate(CLinker.C_POINTER, MemoryAddress.NULL);
         int length = i2d_X509(x509, bufPointer);
         if (length <= 0) {
@@ -1008,9 +1009,6 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
         MemorySegment lenAddress = allocator.allocate(CLinker.C_INT, 0);
         MemorySegment protocolPointer = allocator.allocate(CLinker.C_POINTER, MemoryAddress.NULL);
         SSL_get0_alpn_selected(state.ssl, protocolPointer, lenAddress);
-        if (MemoryAddress.NULL.equals(protocolPointer.address())) {
-            SSL_get0_next_proto_negotiated(state.ssl, protocolPointer, lenAddress);
-        }
         if (MemoryAddress.NULL.equals(protocolPointer.address())) {
             return null;
         }
@@ -1808,14 +1806,7 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
         public String getProtocol() {
             String applicationProtocol = OpenSSLEngine.this.applicationProtocol;
             if (applicationProtocol == null) {
-                synchronized (OpenSSLEngine.this) {
-                    if (!destroyed) {
-                        applicationProtocol = getProtocolNegotiated();
-                    }
-                }
-                if (applicationProtocol == null) {
-                    applicationProtocol = fallbackApplicationProtocol;
-                }
+                applicationProtocol = fallbackApplicationProtocol;
                 if (applicationProtocol != null) {
                     OpenSSLEngine.this.applicationProtocol = applicationProtocol.replace(':', '_');
                 } else {

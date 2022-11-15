@@ -1870,13 +1870,7 @@ public class ContextConfig implements LifecycleListener {
                 } else {
                     handlesTypesNonAnnotations = true;
                 }
-                Set<ServletContainerInitializer> scis =
-                        typeInitializerMap.get(type);
-                if (scis == null) {
-                    scis = new HashSet<>();
-                    typeInitializerMap.put(type, scis);
-                }
-                scis.add(sci);
+                typeInitializerMap.computeIfAbsent(type, k -> new HashSet<>()).add(sci);
             }
         }
     }
@@ -2408,11 +2402,7 @@ public class ContextConfig implements LifecycleListener {
                 }
 
                 for (ServletContainerInitializer sci : entry.getSciSet()) {
-                    Set<Class<?>> classes = initializerClassMap.get(sci);
-                    if (classes == null) {
-                        classes = new HashSet<>();
-                        initializerClassMap.put(sci, classes);
-                    }
+                    Set<Class<?>> classes = initializerClassMap.computeIfAbsent(sci, k -> new HashSet<>());
                     classes.add(clazz);
                 }
             }
@@ -2837,8 +2827,7 @@ public class ContextConfig implements LifecycleListener {
         } else {
             values.add(ev.stringifyValue());
         }
-        String[] result = new String[values.size()];
-        return values.toArray(result);
+        return values.toArray(new String[0]);
     }
 
     protected Map<String,String> processAnnotationWebInitParams(

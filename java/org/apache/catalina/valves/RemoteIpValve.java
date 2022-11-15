@@ -19,9 +19,9 @@ package org.apache.catalina.valves;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.ServletException;
@@ -598,7 +598,7 @@ public class RemoteIpValve extends ValveBase {
         if (isInternal || (trustedProxies != null &&
                 trustedProxies.matcher(originalRemoteAddr).matches())) {
             String remoteIp = null;
-            Deque<String> proxiesHeaderValue = new LinkedList<>();
+            Deque<String> proxiesHeaderValue = new ArrayDeque<>();
             StringBuilder concatRemoteIpHeaderValue = new StringBuilder();
 
             for (Enumeration<String> e = request.getHeaders(remoteIpHeader); e.hasMoreElements();) {
@@ -629,7 +629,7 @@ public class RemoteIpValve extends ValveBase {
                 }
             }
             // continue to loop on remoteIpHeaderValue to build the new value of the remoteIpHeader
-            LinkedList<String> newRemoteIpHeaderValue = new LinkedList<>();
+            Deque<String> newRemoteIpHeaderValue = new ArrayDeque<>();
             for (; idx >= 0; idx--) {
                 String currentRemoteIp = remoteIpHeaderValue[idx];
                 newRemoteIpHeaderValue.addFirst(currentRemoteIp);
@@ -740,28 +740,30 @@ public class RemoteIpValve extends ValveBase {
         try {
             getNext().invoke(request, response);
         } finally {
-            request.setRemoteAddr(originalRemoteAddr);
-            request.setRemoteHost(originalRemoteHost);
-            request.setSecure(originalSecure);
-            request.getCoyoteRequest().scheme().setString(originalScheme);
-            request.getCoyoteRequest().serverName().setString(originalServerName);
-            if (isChangeLocalName()) {
-                request.getCoyoteRequest().localName().setString(originalLocalName);
-            }
-            request.setServerPort(originalServerPort);
-            request.setLocalPort(originalLocalPort);
+            if (!request.isAsync()) {
+                request.setRemoteAddr(originalRemoteAddr);
+                request.setRemoteHost(originalRemoteHost);
+                request.setSecure(originalSecure);
+                request.getCoyoteRequest().scheme().setString(originalScheme);
+                request.getCoyoteRequest().serverName().setString(originalServerName);
+                if (isChangeLocalName()) {
+                    request.getCoyoteRequest().localName().setString(originalLocalName);
+                }
+                request.setServerPort(originalServerPort);
+                request.setLocalPort(originalLocalPort);
 
-            MimeHeaders headers = request.getCoyoteRequest().getMimeHeaders();
-            if (originalProxiesHeader == null || originalProxiesHeader.length() == 0) {
-                headers.removeHeader(proxiesHeader);
-            } else {
-                headers.setValue(proxiesHeader).setString(originalProxiesHeader);
-            }
+                MimeHeaders headers = request.getCoyoteRequest().getMimeHeaders();
+                if (originalProxiesHeader == null || originalProxiesHeader.length() == 0) {
+                    headers.removeHeader(proxiesHeader);
+                } else {
+                    headers.setValue(proxiesHeader).setString(originalProxiesHeader);
+                }
 
-            if (originalRemoteIpHeader == null || originalRemoteIpHeader.length() == 0) {
-                headers.removeHeader(remoteIpHeader);
-            } else {
-                headers.setValue(remoteIpHeader).setString(originalRemoteIpHeader);
+                if (originalRemoteIpHeader == null || originalRemoteIpHeader.length() == 0) {
+                    headers.removeHeader(remoteIpHeader);
+                } else {
+                    headers.setValue(remoteIpHeader).setString(originalRemoteIpHeader);
+                }
             }
         }
     }

@@ -16,18 +16,16 @@
 */
 package jakarta.servlet.jsp.el;
 
-import java.beans.FeatureDescriptor;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Vector;
 
 import jakarta.el.ELContext;
 import jakarta.el.ELResolver;
@@ -91,28 +89,28 @@ public class ImplicitObjectELResolver extends ELResolver {
                         .getContext(JspContext.class);
                 context.setPropertyResolved(base, property);
                 switch (idx) {
-                case APPLICATIONSCOPE:
-                    return ScopeManager.get(page).getApplicationScope();
-                case COOKIE:
-                    return ScopeManager.get(page).getCookie();
-                case HEADER:
-                    return ScopeManager.get(page).getHeader();
-                case HEADERVALUES:
-                    return ScopeManager.get(page).getHeaderValues();
-                case INITPARAM:
-                    return ScopeManager.get(page).getInitParam();
-                case PAGECONTEXT:
-                    return ScopeManager.get(page).getPageContext();
-                case PAGESCOPE:
-                    return ScopeManager.get(page).getPageScope();
-                case PARAM:
-                    return ScopeManager.get(page).getParam();
-                case PARAM_VALUES:
-                    return ScopeManager.get(page).getParamValues();
-                case REQUEST_SCOPE:
-                    return ScopeManager.get(page).getRequestScope();
-                case SESSION_SCOPE:
-                    return ScopeManager.get(page).getSessionScope();
+                    case APPLICATIONSCOPE:
+                        return ScopeManager.get(page).getApplicationScope();
+                    case COOKIE:
+                        return ScopeManager.get(page).getCookie();
+                    case HEADER:
+                        return ScopeManager.get(page).getHeader();
+                    case HEADERVALUES:
+                        return ScopeManager.get(page).getHeaderValues();
+                    case INITPARAM:
+                        return ScopeManager.get(page).getInitParam();
+                    case PAGECONTEXT:
+                        return ScopeManager.get(page).getPageContext();
+                    case PAGESCOPE:
+                        return ScopeManager.get(page).getPageScope();
+                    case PARAM:
+                        return ScopeManager.get(page).getParam();
+                    case PARAM_VALUES:
+                        return ScopeManager.get(page).getParamValues();
+                    case REQUEST_SCOPE:
+                        return ScopeManager.get(page).getRequestScope();
+                    case SESSION_SCOPE:
+                        return ScopeManager.get(page).getSessionScope();
                 }
             }
         }
@@ -158,25 +156,6 @@ public class ImplicitObjectELResolver extends ELResolver {
             }
         }
         return false;
-    }
-
-    @Deprecated(forRemoval = true, since = "JSP 3.1")
-    @Override
-    public Iterator<FeatureDescriptor> getFeatureDescriptors(ELContext context, Object base) {
-        List<FeatureDescriptor> feats = new ArrayList<>(SCOPE_NAMES.length);
-        FeatureDescriptor feat;
-        for (String scopeName : SCOPE_NAMES) {
-            feat = new FeatureDescriptor();
-            feat.setDisplayName(scopeName);
-            feat.setExpert(false);
-            feat.setHidden(false);
-            feat.setName(scopeName);
-            feat.setPreferred(true);
-            feat.setValue(RESOLVABLE_AT_DESIGN_TIME, Boolean.TRUE);
-            feat.setValue(TYPE, String.class);
-            feats.add(feat);
-        }
-        return feats.iterator();
     }
 
     @Override
@@ -259,11 +238,11 @@ public class ImplicitObjectELResolver extends ELResolver {
                     protected Enumeration<String> getAttributeNames() {
                         Cookie[] cookies = ((HttpServletRequest) page.getRequest()).getCookies();
                         if (cookies != null) {
-                            Vector<String> v = new Vector<>();
+                            List<String> list = new ArrayList<>(cookies.length);
                             for (Cookie cookie : cookies) {
-                                v.add(cookie.getName());
+                                list.add(cookie.getName());
                             }
-                            return v.elements();
+                            return Collections.enumeration(list);
                         }
                         return null;
                     }

@@ -16,7 +16,6 @@
  */
 package org.apache.catalina.tribes.transport.nio;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -43,8 +42,6 @@ import org.apache.juli.logging.LogFactory;
  * - READY_TO_WRITE -&gt; write() -&gt; READY TO WRITE | READY TO READ
  * - READY_TO_READ -&gt; read() -&gt; READY_TO_READ | TRANSFER_COMPLETE
  * - TRANSFER_COMPLETE -&gt; CONNECTED
- *
- * @version 1.0
  */
 public class NioSender extends AbstractSender {
 
@@ -208,9 +205,6 @@ public class NioSender extends AbstractSender {
                 //we have written everything, or we are starting a new package
                 //protect against buffer overwrite
                 int byteswritten = isUdpBased()?dataChannel.write(writebuf) : socketChannel.write(writebuf);
-                if (byteswritten == -1 ) {
-                    throw new EOFException();
-                }
                 remaining -= byteswritten;
                 //if the entire message was written from the buffer
                 //reset the position counter

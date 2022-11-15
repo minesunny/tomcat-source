@@ -106,10 +106,10 @@ import org.apache.tomcat.util.http.Parameters.FailReason;
 import org.apache.tomcat.util.http.ServerCookie;
 import org.apache.tomcat.util.http.ServerCookies;
 import org.apache.tomcat.util.http.fileupload.FileItem;
+import org.apache.tomcat.util.http.fileupload.FileUpload;
 import org.apache.tomcat.util.http.fileupload.disk.DiskFileItemFactory;
 import org.apache.tomcat.util.http.fileupload.impl.InvalidContentTypeException;
 import org.apache.tomcat.util.http.fileupload.impl.SizeException;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletRequestContext;
 import org.apache.tomcat.util.http.parser.AcceptLanguage;
 import org.apache.tomcat.util.http.parser.Upgrade;
@@ -2865,7 +2865,7 @@ public class Request implements HttpServletRequest {
             }
             factory.setSizeThreshold(mce.getFileSizeThreshold());
 
-            ServletFileUpload upload = new ServletFileUpload();
+            FileUpload upload = new FileUpload();
             upload.setFileItemFactory(factory);
             upload.setFileSizeMax(mce.getMaxFileSize());
             upload.setSizeMax(mce.getMaxRequestSize());
@@ -3401,12 +3401,7 @@ public class Request implements HttpServletRequest {
         for (AcceptLanguage acceptLanguage : acceptLanguages) {
             // Add a new Locale to the list of Locales for this quality level
             Double key = Double.valueOf(-acceptLanguage.getQuality());  // Reverse the order
-            ArrayList<Locale> values = locales.get(key);
-            if (values == null) {
-                values = new ArrayList<>();
-                locales.put(key, values);
-            }
-            values.add(acceptLanguage.getLocale());
+            locales.computeIfAbsent(key, k -> new ArrayList<>()).add(acceptLanguage.getLocale());
         }
     }
 

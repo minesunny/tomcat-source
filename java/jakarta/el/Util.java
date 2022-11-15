@@ -43,6 +43,9 @@ class Util {
     private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[0];
     private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
+    private static final boolean GET_CLASSLOADER_USE_PRIVILEGED =
+            Boolean.getBoolean("org.apache.el.GET_CLASSLOADER_USE_PRIVILEGED");
+
     /**
      * Checks whether the supplied Throwable is one that needs to be
      * rethrown and swallows all others.
@@ -544,11 +547,9 @@ class Util {
      * making changes keep the code in sync.
      */
     static Method getMethod(Class<?> type, Object base, Method m) {
-        // If base is null, method MUST be static
-        // If base is non-null, method may be static or non-static
         if (m == null ||
                 (Modifier.isPublic(type.getModifiers()) &&
-                        (canAccess(base, m) || base != null && canAccess(null, m)))) {
+                        (Modifier.isStatic(m.getModifiers()) && canAccess(null, m) || canAccess(base, m)))) {
             return m;
         }
         Class<?>[] interfaces = type.getInterfaces();
@@ -657,7 +658,7 @@ class Util {
 
     static ClassLoader getContextClassLoader() {
         ClassLoader tccl;
-        if (System.getSecurityManager() != null) {
+        if (System.getSecurityManager() != null && GET_CLASSLOADER_USE_PRIVILEGED) {
             PrivilegedAction<ClassLoader> pa = new PrivilegedGetTccl();
             tccl = AccessController.doPrivileged(pa);
         } else {

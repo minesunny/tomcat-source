@@ -17,15 +17,21 @@
 package jakarta.annotation;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Indicates a resource required by the application. Annotated classes will be
+ * used as resources. Annotated fields and/or methods will have resources
+ * injected.
+ *
  * @since Common Annotations 1.0
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(Resources.class)
 public @interface Resource {
 
     /**

@@ -52,11 +52,15 @@ to run a cluster on a insecure, untrusted network.</p>
 <p>There are many options for providing a secure, trusted network for use by a
 Tomcat cluster. These include:</p>
 <ul>
-  <li><a href="cluster-interceptor.html#org.apache.catalina.tribes.group.interceptors.EncryptInterceptor_Attributes">EncryptInterceptor</a></li>
   <li>private LAN</li>
   <li>a Virtual Private Network (VPN)</li>
   <li>IPSEC</li>
 </ul>
+
+<p>The <a href="cluster-interceptor.html#org.apache.catalina.tribes.group.interceptors.EncryptInterceptor_Attributes">EncryptInterceptor</a>
+provides confidentiality and integrity protection but it does not protect
+against all risks associated with running a Tomcat cluster on an untrusted
+network, particularly DoS attacks.</p>
 
 </section>
 <section name="Engine vs Host placement">
@@ -106,16 +110,6 @@ Tomcat cluster. These include:</p>
   <p><b><a href="cluster-listener.html">ClusterListener</a>:</b> <br/>
     ClusterListener's are used to track messages sent and received using the <code>SimpleTcpCluster</code>.
     If you wish to track messages, you can add a listener here, or you can add a valve to the channel object.
-  </p>
-</section>
-
-<section name="Deprecated configuration options">
-  <p>
-    <b>Deprecated settings:</b> In the previous version of Tomcat you were able to control session
-       manager settings using manager.&lt;property&gt;=value.
-       This has been discontinued, as the way it was written interferes with
-       the ability to support multiple different manager classes under one cluster implementation,
-       as the same properties might have the different effect on different managers.
   </p>
 </section>
 

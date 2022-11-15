@@ -28,4 +28,5 @@
 #include <openssl/bn.h>
 #include <openssl/engine.h>
 #include <openssl/ocsp.h>
+#include <openssl/provider.h>
 

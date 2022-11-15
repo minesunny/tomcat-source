@@ -19,8 +19,15 @@ package org.apache.tomcat.util.buf;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
+
+import org.apache.tomcat.util.compat.JreCompat;
+import org.apache.tomcat.util.res.StringManager;
 
 /**
  * This class is used to represent a subarray of bytes in an HTTP message.
@@ -35,7 +42,10 @@ import java.util.Locale;
  * @author Costin Manolache
  */
 public final class MessageBytes implements Cloneable, Serializable {
+
     private static final long serialVersionUID = 1L;
+
+    private static final StringManager sm = StringManager.getManager(MessageBytes.class);
 
     // primary type ( whatever is set as original value )
     private int type = T_NULL;
@@ -51,6 +61,8 @@ public final class MessageBytes implements Cloneable, Serializable {
         was a char[] */
     public static final int T_CHARS = 3;
 
+    public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+
     private int hashCode=0;
     // did we compute the hashcode ?
     private boolean hasHashCode=false;
@@ -61,9 +73,6 @@ public final class MessageBytes implements Cloneable, Serializable {
 
     // String
     private String strValue;
-    // true if a String value was computed. Probably not needed,
-    // strValue!=null is the same
-    private boolean hasStrValue=false;
 
     /**
      * Creates a new, uninitialized MessageBytes object.
@@ -87,7 +96,7 @@ public final class MessageBytes implements Cloneable, Serializable {
     }
 
     public boolean isNull() {
-        return byteC.isNull() && charC.isNull() && !hasStrValue;
+        return type == T_NULL;
     }
 
     /**
@@ -100,7 +109,6 @@ public final class MessageBytes implements Cloneable, Serializable {
 
         strValue=null;
 
-        hasStrValue=false;
         hasHashCode=false;
         hasLongValue=false;
     }
@@ -116,7 +124,6 @@ public final class MessageBytes implements Cloneable, Serializable {
     public void setBytes(byte[] b, int off, int len) {
         byteC.setBytes( b, off, len );
         type=T_BYTES;
-        hasStrValue=false;
         hasHashCode=false;
         hasLongValue=false;
     }
@@ -131,7 +138,6 @@ public final class MessageBytes implements Cloneable, Serializable {
     public void setChars( char[] c, int off, int len ) {
         charC.setChars( c, off, len );
         type=T_CHARS;
-        hasStrValue=false;
         hasHashCode=false;
         hasLongValue=false;
     }
@@ -141,15 +147,13 @@ public final class MessageBytes implements Cloneable, Serializable {
      * @param s The string
      */
     public void setString( String s ) {
-        strValue=s;
-        hasHashCode=false;
-        hasLongValue=false;
+        strValue = s;
+        hasHashCode = false;
+        hasLongValue = false;
         if (s == null) {
-            hasStrValue=false;
-            type=T_NULL;
+            type = T_NULL;
         } else {
-            hasStrValue=true;
-            type=T_STR;
+            type = T_STR;
         }
     }
 
@@ -161,21 +165,22 @@ public final class MessageBytes implements Cloneable, Serializable {
      */
     @Override
     public String toString() {
-        if (hasStrValue) {
-            return strValue;
+        switch (type) {
+            case T_NULL:
+            case T_STR:
+                // No conversion required
+                break;
+            case T_BYTES:
+                type = T_STR;
+                strValue = byteC.toString();
+                break;
+            case T_CHARS:
+                type = T_STR;
+                strValue = charC.toString();
+                break;
         }
 
-        switch (type) {
-        case T_CHARS:
-            strValue = charC.toString();
-            hasStrValue = true;
-            return strValue;
-        case T_BYTES:
-            strValue = byteC.toString();
-            hasStrValue = true;
-            return strValue;
-        }
-        return null;
+        return strValue;
     }
 
     //----------------------------------------
@@ -232,41 +237,104 @@ public final class MessageBytes implements Cloneable, Serializable {
 
 
     /**
-     * Do a char-&gt;byte conversion.
+     * Convert to bytes and fill the ByteChunk with the converted value.
      */
     public void toBytes() {
-        if (isNull()) {
+        if (type == T_NULL) {
+            byteC.recycle();
             return;
         }
-        if (!byteC.isNull()) {
-            type = T_BYTES;
+
+        if (type == T_BYTES) {
+            // No conversion required
             return;
         }
-        toString();
+
+        if (!JreCompat.isJre16Available() && getCharset() == ByteChunk.DEFAULT_CHARSET) {
+            if (type == T_CHARS) {
+                toBytesSimple(charC.getChars(), charC.getStart(), charC.getLength());
+            } else {
+                // Must be T_STR
+                char[] chars = strValue.toCharArray();
+                toBytesSimple(chars, 0, chars.length);
+            }
+            return;
+        }
+
+        ByteBuffer bb;
+        CharsetEncoder encoder = getCharset().newEncoder();
+        encoder.onMalformedInput(CodingErrorAction.REPORT);
+        encoder.onUnmappableCharacter(CodingErrorAction.REPORT);
+
+        try {
+            if (type == T_CHARS) {
+                bb = encoder.encode(CharBuffer.wrap(charC));
+            } else {
+                // Must be T_STR
+                bb = encoder.encode(CharBuffer.wrap(strValue));
+            }
+        } catch (CharacterCodingException cce) {
+            // Some calls to this conversion originate in application code and
+            // the Servlet API methods do not declare a suitable exception that
+            // can be thrown. Therefore stick with the uncaught exception type
+            // used by the old, pre-Java 16 optimised version of this code.
+            throw new IllegalArgumentException(cce);
+        }
+
+        byteC.setBytes(bb.array(), bb.arrayOffset(), bb.limit());
         type = T_BYTES;
-        Charset charset = byteC.getCharset();
-        ByteBuffer result = charset.encode(strValue);
-        byteC.setBytes(result.array(), result.arrayOffset(), result.limit());
+    }
+
+
+    /**
+     * Simple conversion of chars to bytes.
+     *
+     * @throws IllegalArgumentException if any of the characters to convert are
+     *                                  above code point 0xFF.
+     */
+    private void toBytesSimple(char[] chars, int start, int len) {
+        byteC.recycle();
+        byteC.allocate(len, byteC.getLimit());
+        byte[] bytes = byteC.getBuffer();
+
+        for (int i = 0; i < len; i++) {
+            if (chars[i + start] > 255) {
+                throw new IllegalArgumentException(sm.getString("messageBytes.illegalCharacter",
+                        Character.toString(chars[i + start]), Integer.valueOf(chars[i + start])));
+            } else {
+                bytes[i] = (byte) chars[i + start];
+            }
+        }
+
+        byteC.setEnd(len);
+        type = T_BYTES;
     }
 
 
     /**
      * Convert to char[] and fill the CharChunk.
-     * XXX Not optimized - it converts to String first.
+     *
+     * Note: The conversion from bytes is not optimised - it converts to String
+     *       first. However, Tomcat doesn't call this method to convert from
+     *       bytes so there is no benefit from optimising that path.
      */
     public void toChars() {
-        if (isNull()) {
-            return;
+        switch (type) {
+            case T_NULL:
+                charC.recycle();
+                //$FALL-THROUGH$
+            case T_CHARS:
+                // No conversion required
+                return;
+            case T_BYTES:
+                toString();
+                //$FALL-THROUGH$
+            case T_STR: {
+                type = T_CHARS;
+                char cc[] = strValue.toCharArray();
+                charC.setChars(cc, 0, cc.length);
+            }
         }
-        if (!charC.isNull()) {
-            type = T_CHARS;
-            return;
-        }
-        // inefficient
-        toString();
-        type = T_CHARS;
-        char cc[] = strValue.toCharArray();
-        charC.setChars(cc, 0, cc.length);
     }
 
 
@@ -535,7 +603,6 @@ public final class MessageBytes implements Cloneable, Serializable {
             end--;
         }
         longValue=l;
-        hasStrValue=false;
         hasHashCode=false;
         hasLongValue=true;
         type=T_BYTES;

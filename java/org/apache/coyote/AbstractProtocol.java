@@ -18,7 +18,6 @@ package org.apache.coyote;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -86,8 +85,7 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
     private Handler<S> handler;
 
 
-    private final Set<Processor> waitingProcessors =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Processor> waitingProcessors = ConcurrentHashMap.newKeySet();
 
     /**
      * Controller for the timeout scheduling.
@@ -97,6 +95,9 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
 
     public AbstractProtocol(AbstractEndpoint<S,?> endpoint) {
         this.endpoint = endpoint;
+        ConnectionHandler<S> cHandler = new ConnectionHandler<>(this);
+        getEndpoint().setHandler(cHandler);
+        setHandler(cHandler);
         setConnectionLinger(Constants.DEFAULT_CONNECTION_LINGER);
         setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
     }
@@ -910,7 +911,7 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
                             if (httpUpgradeHandler instanceof InternalHttpUpgradeHandler) {
                                 if (((InternalHttpUpgradeHandler) httpUpgradeHandler).hasAsyncIO()) {
                                     // The handler will initiate all further I/O
-                                    state = SocketState.UPGRADED;
+                                    state = SocketState.ASYNC_IO;
                                 }
                             }
                         }
@@ -946,6 +947,9 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
                         longPoll(wrapper, processor);
                         getProtocol().addWaitingProcessor(processor);
                     }
+                } else if (state == SocketState.ASYNC_IO) {
+                    // Don't add sockets back to the poller.
+                    // The handler will initiate all further I/O
                 } else if (state == SocketState.SUSPENDED) {
                     // Don't add sockets back to the poller.
                     // The resumeProcessing() method will add this socket

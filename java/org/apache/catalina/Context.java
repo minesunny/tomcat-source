@@ -764,16 +764,6 @@ public interface Context extends Container, ContextBind {
     /**
      * @return the value of the parallel annotation scanning flag.  If true,
      * it will dispatch scanning to the utility executor.
-     * @deprecated This method will be removed in Tomcat 11 onwards
-     */
-    @Deprecated
-    public default boolean isParallelAnnotationScanning() {
-        return getParallelAnnotationScanning();
-    }
-
-    /**
-     * @return the value of the parallel annotation scanning flag.  If true,
-     * it will dispatch scanning to the utility executor.
      */
     public boolean getParallelAnnotationScanning();
 
@@ -1807,7 +1797,7 @@ public interface Context extends Container, ContextBind {
 
     /**
      * Are paths used in calls to obtain a request dispatcher expected to be
-     * encoded? This applys to both how Tomcat handles calls to obtain a request
+     * encoded? This applies to both how Tomcat handles calls to obtain a request
      * dispatcher as well as how Tomcat generates paths used to obtain request
      * dispatchers internally.
      *
@@ -1953,19 +1943,4 @@ public interface Context extends Container, ContextBind {
      * @param dispatcherWrapsSameObject the new flag value
      */
     public void setDispatcherWrapsSameObject(boolean dispatcherWrapsSameObject);
-
-
-    /**
-     * @return <code>true</code> if the resources archive lookup will
-     * use a bloom filter.
-     */
-    public boolean getUseBloomFilterForArchives();
-
-    /**
-     * Set bloom filter flag value.
-     *
-     * @param useBloomFilterForArchives The new fast class path scan flag
-     */
-    public void setUseBloomFilterForArchives(boolean useBloomFilterForArchives);
-
 }

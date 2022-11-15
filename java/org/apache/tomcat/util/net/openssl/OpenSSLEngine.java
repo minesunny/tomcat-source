@@ -826,12 +826,7 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
         if ((opts & SSL.SSL_OP_NO_SSLv3) == 0) {
             enabled.add(Constants.SSL_PROTO_SSLv3);
         }
-        int size = enabled.size();
-        if (size == 0) {
-            return new String[0];
-        } else {
-            return enabled.toArray(new String[size]);
-        }
+        return enabled.toArray(new String[0]);
     }
 
     @Override
@@ -931,9 +926,6 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
         } else {
             if (alpn) {
                 selectedProtocol = SSL.getAlpnSelected(state.ssl);
-                if (selectedProtocol == null) {
-                    selectedProtocol = SSL.getNextProtoNegotiated(state.ssl);
-                }
             }
             session.lastAccessedTime = System.currentTimeMillis();
             // if SSL_do_handshake returns > 0 it means the handshake was finished. This means we can update
@@ -1069,9 +1061,6 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
                     (SSL.getPostHandshakeAuthInProgress(state.ssl) == 0)) {
                 if (alpn) {
                     selectedProtocol = SSL.getAlpnSelected(state.ssl);
-                    if (selectedProtocol == null) {
-                        selectedProtocol = SSL.getNextProtoNegotiated(state.ssl);
-                    }
                 }
                 session.lastAccessedTime = System.currentTimeMillis();
                 version = SSL.getVersion(state.ssl);
@@ -1416,14 +1405,7 @@ public final class OpenSSLEngine extends SSLEngine implements SSLUtil.ProtocolIn
         public String getProtocol() {
             String applicationProtocol = OpenSSLEngine.this.applicationProtocol;
             if (applicationProtocol == null) {
-                synchronized (OpenSSLEngine.this) {
-                    if (!destroyed) {
-                        applicationProtocol = SSL.getNextProtoNegotiated(state.ssl);
-                    }
-                }
-                if (applicationProtocol == null) {
-                    applicationProtocol = fallbackApplicationProtocol;
-                }
+                applicationProtocol = fallbackApplicationProtocol;
                 if (applicationProtocol != null) {
                     OpenSSLEngine.this.applicationProtocol = applicationProtocol.replace(':', '_');
                 } else {

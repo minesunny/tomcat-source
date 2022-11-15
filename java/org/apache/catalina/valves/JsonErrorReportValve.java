@@ -24,6 +24,7 @@ import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.coyote.ActionCode;
 import org.apache.tomcat.util.ExceptionUtils;
+import org.apache.tomcat.util.json.JSONFilter;
 import org.apache.tomcat.util.res.StringManager;
 
 /**
@@ -82,9 +83,9 @@ public class JsonErrorReportValve extends ErrorReportValve {
             }
         }
         String jsonReport = "{\n" +
-                            "  \"type\": \"" + type + "\",\n" +
-                            "  \"message\": \"" + message + "\",\n" +
-                            "  \"description\": \"" + description + "\"\n" +
+                            "  \"type\": \"" + JSONFilter.escape(type) + "\",\n" +
+                            "  \"message\": \"" + JSONFilter.escape(message) + "\",\n" +
+                            "  \"description\": \"" + JSONFilter.escape(description) + "\"\n" +
                             "}";
         try {
             try {
@@ -93,7 +94,7 @@ public class JsonErrorReportValve extends ErrorReportValve {
             } catch (Throwable t) {
                 ExceptionUtils.handleThrowable(t);
                 if (container.getLogger().isDebugEnabled()) {
-                    container.getLogger().debug("status.setContentType", t);
+                    container.getLogger().debug("Failure to set the content-type of response", t);
                 }
             }
             Writer writer = response.getReporter();

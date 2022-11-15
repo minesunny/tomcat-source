@@ -444,7 +444,7 @@ After that you can proceed with importing your Certificate.</p>
 <p>Each Certificate Authority tends to differ slightly from the others. They may
 require slightly different information and/or provide the certificate and
 associated certificate chain in different formats. Additionally, the rules that
-the Certificate Authorities use for issuing certifcates change over time. As a
+the Certificate Authorities use for issuing certificates change over time. As a
 result you may find that the commands given above may need to be modified. If
 you require assitance then help is available via the
 <a href="http://tomcat.apache.org/lists.html#tomcat-users">Apache Tomcat users
@@ -521,6 +521,15 @@ nsComment="Testing OCSP Certificate"
 </section>
 
 <section name="Troubleshooting">
+
+<p>Additional information may be obtained about TLS handshake failures by
+configuring the dedicated TLS handshake logger to log debug level messages by
+adding the following to <code>$CATALINA_BASE/conf/logging.properties</code>:
+<source>org.apache.tomcat.util.net.NioEndpoint.handshake.level=FINE</source>
+or
+<source>org.apache.tomcat.util.net.Nio2Endpoint.handshake.level=FINE</source>
+depending on the <strong>Connector</strong> being used.
+</p>
 
 <p>Here is a list of common problems that you may encounter when setting up
 SSL communications, and what to do about them.</p>

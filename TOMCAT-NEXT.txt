@@ -15,20 +15,20 @@
   limitations under the License.
 ================================================================================
 
-Notes of things to consider for the next major Tomcat release (10.1.x)
+Notes of things to consider for the next major Tomcat release (11.x)
 
-Items carried over from the 9.0.x list:
-
- 1. Remove the use of system properties to control configuration wherever
-    possible.
-
- 2. Reduce instances of setters and getters for the same property existing on an
-    object and its parent. This may require new objects to be exposed via JMX.
-
-Deferred until 10.1.x:
-
- 1. Review code forked from Commons projects and consider removing unused code.
-
- 2. Implement OCSP checks for client certs with NIO/NIO2.
+ 1. Implement OCSP checks for client certs with NIO/NIO2.
     Useful reference:
     https://stackoverflow.com/questions/5161504/ocsp-revocation-on-client-certificate
+
+ 2. Integrate Panama OpenSSL module once Java 21 is available. Building Tomcat
+    releases would then require at least Java 21.
+
+ 3. Add QUIC support using OpenSSL and Panama.
+
+ 4. Remove SecurityManager (assuming Jakarta EE 11 does so).
+
+ 5. Update minimum Java version to 17 (assuming Jakarta EE 11 does so).
+
+ 6. Implement an optional Loom module that provides
+    o.a.c.http11.Http11BioLoomProtocol

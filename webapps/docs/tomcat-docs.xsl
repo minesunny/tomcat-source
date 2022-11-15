@@ -27,7 +27,7 @@
               indent="no"
               doctype-system="about:legacy-compat"/>
 
-  <!-- Defined parameters (overrideable) -->
+  <!-- Defined parameters (overridable) -->
   <xsl:param    name="home-name"           select="'The Tomcat Project'"/>
   <xsl:param    name="home-href"           select="'https://tomcat.apache.org/'"/>
   <xsl:param    name="home-logo"           select="'/images/tomcat.png'"/>
@@ -35,19 +35,22 @@
   <xsl:param    name="apache-logo"         select="'/images/asf-logo.svg'"/>
   <xsl:param    name="subdir"              select="''"/>
   <xsl:param    name="relative-path"       select="'.'"/>
-  <xsl:param    name="version"             select="'10.1.x'"/>
-  <xsl:param    name="majorversion"        select="'10'"/>
-  <xsl:param    name="majorminorversion"   select="'10.1'"/>
-  <xsl:param    name="minjavaversion"      select="'8'"/>
+  <!-- Keep versions in sync with build.xml -->
+  <xsl:param    name="version"             select="'11.0.x'"/>
+  <xsl:param    name="majorversion"        select="'11'"/>
+  <xsl:param    name="majorminorversion"   select="'11.0'"/>
+  <xsl:param    name="minjavaversion"      select="'11'"/>
+  <xsl:param    name="buildjavaversion"    select="'11'"/>
+  <xsl:param    name="antversionrequired"  select="'1.10.2'"/>
   <xsl:param    name="build-date"          select="'MMM d yyyy'"/>
   <xsl:param    name="build-date-iso-8601" select="'yyyy-MM-dd'"/>
   <xsl:param    name="year"                select="'yyyy'"/>
   <xsl:param    name="buglink"             select="'https://bz.apache.org/bugzilla/show_bug.cgi?id='"/>
   <xsl:param    name="prlink"              select="'https://github.com/apache/tomcat/pull/'"/>
   <xsl:param    name="revlink"             select="'https://svn.apache.org/viewvc?view=rev&amp;rev='"/>
-  <xsl:param    name="doclink"             select="'https://tomcat.apache.org/tomcat-10.1-doc'"/>
-  <xsl:param    name="sylink"              select="'https://tomcat.apache.org/security-10.html'"/>
-  <xsl:param    name="dllink"              select="'https://tomcat.apache.org/download-10.cgi'"/>
+  <xsl:param    name="doclink"             select="'https://tomcat.apache.org/tomcat-11.0-doc'"/>
+  <xsl:param    name="sylink"              select="'https://tomcat.apache.org/security-11.html'"/>
+  <xsl:param    name="dllink"              select="'https://tomcat.apache.org/download-11.cgi'"/>
   <xsl:param    name="sitedir"             select="''"/>
   <xsl:param    name="filename"            select="'-'"/>
 
@@ -428,6 +431,12 @@
   </xsl:template>
   <xsl:template match="min-java-version">
     <xsl:value-of select="$minjavaversion"/>
+  </xsl:template>
+  <xsl:template match="build-java-version">
+    <xsl:value-of select="$buildjavaversion"/>
+  </xsl:template>
+  <xsl:template match="ant-version-required">
+    <xsl:value-of select="$antversionrequired"/>
   </xsl:template>
 
   <!-- Process everything else by just passing it through -->

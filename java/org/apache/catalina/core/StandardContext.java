@@ -24,9 +24,11 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -37,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -834,7 +835,6 @@ public class StandardContext extends ContainerBase
 
     private boolean parallelAnnotationScanning = false;
 
-    private boolean useBloomFilterForArchives = false;
 
     // ----------------------------------------------------- Context Properties
 
@@ -1447,23 +1447,6 @@ public class StandardContext extends ContainerBase
         support.firePropertyChange("antiResourceLocking",
                                    oldAntiResourceLocking,
                                    this.antiResourceLocking);
-
-    }
-
-
-    @Override
-    public boolean getUseBloomFilterForArchives() {
-        return this.useBloomFilterForArchives;
-    }
-
-
-    @Override
-    public void setUseBloomFilterForArchives(boolean useBloomFilterForArchives) {
-
-        boolean oldUseBloomFilterForArchives = this.useBloomFilterForArchives;
-        this.useBloomFilterForArchives = useBloomFilterForArchives;
-        support.firePropertyChange("useBloomFilterForArchives", oldUseBloomFilterForArchives,
-                this.useBloomFilterForArchives);
 
     }
 
@@ -3496,8 +3479,7 @@ public class StandardContext extends ContainerBase
     @Override
     public FilterDef[] findFilterDefs() {
         synchronized (filterDefs) {
-            FilterDef results[] = new FilterDef[filterDefs.size()];
-            return filterDefs.values().toArray(results);
+            return filterDefs.values().toArray(new FilterDef[0]);
         }
     }
 
@@ -3531,9 +3513,7 @@ public class StandardContext extends ContainerBase
      */
     public MessageDestination[] findMessageDestinations() {
         synchronized (messageDestinations) {
-            MessageDestination results[] =
-                new MessageDestination[messageDestinations.size()];
-            return messageDestinations.values().toArray(results);
+            return messageDestinations.values().toArray(new MessageDestination[0]);
         }
     }
 
@@ -3557,8 +3537,7 @@ public class StandardContext extends ContainerBase
     @Override
     public String[] findMimeMappings() {
         synchronized (mimeMappings) {
-            String results[] = new String[mimeMappings.size()];
-            return mimeMappings.keySet().toArray(results);
+            return mimeMappings.keySet().toArray(new String[0]);
         }
     }
 
@@ -3662,8 +3641,7 @@ public class StandardContext extends ContainerBase
     @Override
     public String[] findServletMappings() {
         synchronized (servletMappingsLock) {
-            String results[] = new String[servletMappings.size()];
-            return servletMappings.keySet().toArray(results);
+            return servletMappings.keySet().toArray(new String[0]);
         }
     }
 
@@ -4890,12 +4868,7 @@ public class StandardContext extends ContainerBase
                 continue;
             }
             Integer key = Integer.valueOf(loadOnStartup);
-            ArrayList<Wrapper> list = map.get(key);
-            if (list == null) {
-                list = new ArrayList<>();
-                map.put(key, list);
-            }
-            list.add(wrapper);
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(wrapper);
         }
 
         // Load the collected "load on startup" servlets
@@ -5029,6 +5002,7 @@ public class StandardContext extends ContainerBase
                     cl.setClearReferencesHttpClientKeepAliveThread(getClearReferencesHttpClientKeepAliveThread());
                     cl.setClearReferencesObjectStreamClassCaches(getClearReferencesObjectStreamClassCaches());
                     cl.setClearReferencesThreadLocals(getClearReferencesThreadLocals());
+                    cl.setSkipMemoryLeakChecksOnJvmShutdown(getSkipMemoryLeakChecksOnJvmShutdown());
                 }
 
                 // By calling unbindThread and bindThread in a row, we setup the
@@ -5302,12 +5276,8 @@ public class StandardContext extends ContainerBase
             String jndiName = resource.getName();
             for (InjectionTarget injectionTarget: injectionTargets) {
                 String clazz = injectionTarget.getTargetClass();
-                Map<String, String> injections = injectionMap.get(clazz);
-                if (injections == null) {
-                    injections = new HashMap<>();
-                    injectionMap.put(clazz, injections);
-                }
-                injections.put(injectionTarget.getTargetName(), jndiName);
+                injectionMap.computeIfAbsent(clazz, k -> new HashMap<>())
+                    .put(injectionTarget.getTargetName(), jndiName);
             }
         }
     }
@@ -5331,10 +5301,8 @@ public class StandardContext extends ContainerBase
         ApplicationParameter params[] = findApplicationParameters();
         for (ApplicationParameter param : params) {
             if (param.getOverride()) {
-                if (mergedParams.get(param.getName()) == null) {
-                    mergedParams.put(param.getName(),
-                            param.getValue());
-                }
+                mergedParams.computeIfAbsent(param.getName(),
+                    k -> param.getValue());
             } else {
                 mergedParams.put(param.getName(), param.getValue());
             }
@@ -5856,14 +5824,14 @@ public class StandardContext extends ContainerBase
             if (parent == null) {
             namingContextName = getName();
             } else {
-            Stack<String> stk = new Stack<>();
+            Deque<String> stk = new ArrayDeque<>();
             StringBuilder buff = new StringBuilder();
             while (parent != null) {
-                stk.push(parent.getName());
+                stk.addFirst(parent.getName());
                 parent = parent.getParent();
             }
-            while (!stk.empty()) {
-                buff.append("/" + stk.pop());
+            while (!stk.isEmpty()) {
+                buff.append("/").append(stk.remove());
             }
             buff.append(getName());
             namingContextName = buff.toString();
@@ -6378,25 +6346,12 @@ public class StandardContext extends ContainerBase
      */
     private String server = null;
 
-    /**
-     * The Java virtual machines on which this module is running.
-     */
-    private String[] javaVMs = null;
-
     public String getServer() {
         return server;
     }
 
     public String setServer(String server) {
         return this.server=server;
-    }
-
-    public String[] getJavaVMs() {
-        return javaVMs;
-    }
-
-    public String[] setJavaVMs(String[] javaVMs) {
-        return this.javaVMs = javaVMs;
     }
 
     /**

@@ -36,7 +36,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -85,7 +84,7 @@ import java.util.regex.Pattern;
  *    implementation class name for this Handler. Default value: unset</li>
  *   <li><code>formatter</code> - The <code>java.util.logging.Formatter</code>
  *    implementation class name for this Handler. Default value:
- *    <code>java.util.logging.SimpleFormatter</code></li>
+ *    <code>org.apache.juli.OneLineFormatter</code></li>
  *   <li><code>maxDays</code> - The maximum number of days to keep the log
  *    files. If the specified value is <code>&lt;=0</code> then the log files
  *    will be kept on the file system forever, otherwise they will be kept the
@@ -94,59 +93,13 @@ import java.util.regex.Pattern;
  */
 public class FileHandler extends Handler {
 
+
     public static final int DEFAULT_MAX_DAYS = -1;
     public static final int DEFAULT_BUFFER_SIZE = -1;
 
 
     private static final ExecutorService DELETE_FILES_SERVICE =
-            Executors.newSingleThreadExecutor(new ThreadFactory() {
-                private static final String NAME_PREFIX = "FileHandlerLogFilesCleaner-";
-                private final boolean isSecurityEnabled;
-                private final ThreadGroup group;
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                {
-                    SecurityManager s = System.getSecurityManager();
-                    if (s == null) {
-                        this.isSecurityEnabled = false;
-                        this.group = Thread.currentThread().getThreadGroup();
-                    } else {
-                        this.isSecurityEnabled = true;
-                        this.group = s.getThreadGroup();
-                    }
-                }
-
-                @Override
-                public Thread newThread(Runnable r) {
-                    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                    try {
-                        // Threads should not be created by the webapp classloader
-                        if (isSecurityEnabled) {
-                            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                                Thread.currentThread()
-                                        .setContextClassLoader(getClass().getClassLoader());
-                                return null;
-                            });
-                        } else {
-                            Thread.currentThread()
-                                    .setContextClassLoader(getClass().getClassLoader());
-                        }
-                        Thread t = new Thread(group, r,
-                                NAME_PREFIX + threadNumber.getAndIncrement());
-                        t.setDaemon(true);
-                        return t;
-                    } finally {
-                        if (isSecurityEnabled) {
-                            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                                Thread.currentThread().setContextClassLoader(loader);
-                                return null;
-                            });
-                        } else {
-                            Thread.currentThread().setContextClassLoader(loader);
-                        }
-                    }
-                }
-            });
+            Executors.newSingleThreadExecutor(new ThreadFactory("FileHandlerLogFilesCleaner-"));
 
     // ------------------------------------------------------------ Constructor
 
@@ -538,7 +491,7 @@ public class FileHandler extends Handler {
     }
 
     private void clean() {
-        if (maxDays.intValue() <= 0) {
+        if (maxDays.intValue() <= 0 || Files.notExists(getDirectoryAsPath())) {
             return;
         }
         DELETE_FILES_SERVICE.submit(() -> {
@@ -555,7 +508,7 @@ public class FileHandler extends Handler {
 
     private DirectoryStream<Path> streamFilesForDelete() throws IOException {
         LocalDate maxDaysOffset = LocalDate.now().minus(maxDays.intValue(), ChronoUnit.DAYS);
-        return Files.newDirectoryStream(new File(directory).toPath(), path -> {
+        return Files.newDirectoryStream(getDirectoryAsPath(), path -> {
             boolean result = false;
             String date = obtainDateFromPath(path);
             if (date != null) {
@@ -570,6 +523,10 @@ public class FileHandler extends Handler {
         });
     }
 
+    private Path getDirectoryAsPath() {
+        return Path.of(directory);
+    }
+
     private String obtainDateFromPath(Path path) {
         Path fileName = path.getFileName();
         if (fileName == null) {
@@ -581,6 +538,41 @@ public class FileHandler extends Handler {
             return date.substring(0, date.length() - suffix.length());
         } else {
             return null;
+        }
+    }
+
+    protected static final class ThreadFactory implements java.util.concurrent.ThreadFactory {
+        private final String namePrefix;
+        private final boolean isSecurityEnabled;
+        private final ThreadGroup group;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        public ThreadFactory(final String namePrefix) {
+            this.namePrefix = namePrefix;
+            SecurityManager s = System.getSecurityManager();
+            if (s == null) {
+                this.isSecurityEnabled = false;
+                this.group = Thread.currentThread().getThreadGroup();
+            } else {
+                this.isSecurityEnabled = true;
+                this.group = s.getThreadGroup();
+            }
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement());
+            // Threads should not have as context classloader a webapp classloader
+            if (isSecurityEnabled) {
+                AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+                    t.setContextClassLoader(ThreadFactory.class.getClassLoader());
+                    return null;
+                });
+            } else {
+                t.setContextClassLoader(ThreadFactory.class.getClassLoader());
+            }
+            t.setDaemon(true);
+            return t;
         }
     }
 }

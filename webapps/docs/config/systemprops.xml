@@ -51,13 +51,16 @@
       <p>Property replacement from the specified property source on the JVM
          system properties can also be done using the
          <code>REPLACE_SYSTEM_PROPERTIES</code> system property.</p>
+      <p><code>org.apache.tomcat.util.digester.ServiceBindingPropertySource</code>
+        can be used to replace parameters from any Kubernetes service bindings
+        that follows the <a href="https://servicebinding.io/">servicebinding.io</a> spec</p>
       <p><code>org.apache.tomcat.util.digester.EnvironmentPropertySource</code>
          can be used to replace parameters from the process' environment
          variables, e.g. injected ConfigMaps or Secret objects in container
          based systems like OpenShift or Kubernetes.</p>
       <p><code>org.apache.tomcat.util.digester.SystemPropertySource</code>
          does replacement with system properties. It is always enabled,
-         but can also be spefied as part of the property value.</p>
+         but can also be specified as part of the property value.</p>
     </property>
     <property name="org.apache.tomcat.util.digester. REPLACE_SYSTEM_PROPERTIES">
       <p>Set this boolean system property to <code>true</code> to cause
@@ -70,6 +73,15 @@
 
 <section name="Expression Language">
   <properties>
+
+    <property name="org.apache.el. GET_CLASSLOADER_USE_PRIVILEGED">
+      <p>Controls whether the EL API classes make use of a privileged block to
+      obtain the thread context class loader. When using the EL API within
+      Apache Tomcat this does not need to be set as all calls are already
+      wrapped in a privileged block further up the stack. It may be required if
+      using the EL API under a SecurityManager outside of Apache Tomcat.</p>
+      <p>If not specified, the default of <code>false</code> will be used.</p>
+    </property>
 
     <property name="org.apache.el.BeanELResolver. CACHE_SIZE">
       <p>The number of jakarta.el.BeanELResolver.BeanProperties objects that will
@@ -137,15 +149,6 @@
       </ul>
     </property>
 
-    <property name="org.apache.tomcat.websocket. STRICT_SPEC_COMPLIANCE">
-      <p>The default value of this system property is <code>false</code>.</p>
-      <p>If this is <code>true</code> the default values will be changed
-      to <code>true</code> instead of <code>false</code> for:</p>
-      <ul>
-        <li><code>org.apache.tomcat.websocket.server.WsServerContainer#isEnforceNoAddAfterHandshake</code></li>
-      </ul>
-    </property>
-
   </properties>
 
 </section>
@@ -206,6 +209,7 @@
            <code>maxHeaderCount</code> or <code>maxParameterCount</code> limits
            of a <a href="http.html">connector</a>).</li>
          <li>invalid host names</li>
+         <li>HTTP/2 stream closures</li>
          </ul>
          <p>Other errors triggered by invalid input data may be added to this
          system in later versions.</p>
@@ -232,7 +236,7 @@
 
   <properties>
     <property name="tomcat.util.scan. StandardJarScanFilter.jarsToSkip">
-      <p>A list of comma-separated file name patters that is used as the default
+      <p>A list of comma-separated file name patterns that is used as the default
          value for <code>pluggabilitySkip</code> and <code>tldSkip</code>
          attributes of the standard
          <a href="jar-scan-filter.html">JarScanFilter</a> implementation.</p>
@@ -242,7 +246,7 @@
     </property>
 
     <property name="tomcat.util.scan. StandardJarScanFilter.jarsToScan">
-      <p>A list of comma-separated file name patters that is used as the default
+      <p>A list of comma-separated file name patterns that is used as the default
          value for <code>pluggabilityScan</code> and <code>tldScan</code>
          attributes of the standard
          <a href="jar-scan-filter.html">JarScanFilter</a> implementation.</p>
@@ -303,12 +307,6 @@
       <p>The class name of the factory to use to create resources of type
       <code>jakarta.mail.Session</code>. If not specified the default of
       <code>org.apache.naming.factory.MailSessionFactory</code> is used.</p>
-    </property>
-
-    <property name="jvmRoute">
-      <p>Provides a default value for the <code>jvmRoute</code> attribute of the
-      <a href="engine.html">Engine</a> element. It does not override the value
-      configured on the <a href="engine.html">Engine</a> element.</p>
     </property>
 
     <property name="catalina.config">

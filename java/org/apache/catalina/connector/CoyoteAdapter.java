@@ -68,7 +68,7 @@ public class CoyoteAdapter implements Adapter {
 
     // -------------------------------------------------------------- Constants
 
-    private static final String POWERED_BY = "Servlet/6.0 JSP/3.1 " +
+    private static final String POWERED_BY = "Servlet/6.0 JSP/4.0 " +
             "(" + ServerInfo.getServerInfo() + " Java/" +
             System.getProperty("java.vm.vendor") + "/" +
             System.getProperty("java.runtime.version") + ")";
@@ -753,7 +753,7 @@ public class CoyoteAdapter implements Adapter {
                 // Too many cookies
                 if (!response.isError()) {
                     response.setError();
-                    response.sendError(400);
+                    response.sendError(400, e.getMessage());
                 }
                 return true;
             }

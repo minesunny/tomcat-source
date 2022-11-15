@@ -50,7 +50,7 @@
   unpacked contents, as described in the Servlet Specification (version
   2.2 or later).  For more information about web application archives,
   you can download the
-  <a href="https://cwiki.apache.org/confluence/display/tomcat/Specifications">Servlet
+  <a href="https://cwiki.apache.org/confluence/display/TOMCAT/Specifications">Servlet
   Specification</a>, and review the Tomcat
   <a href="../appdev/index.html">Application Developer's Guide</a>.</p>
 
@@ -638,14 +638,6 @@
         penalty.</p>
       </attribute>
 
-      <attribute name="useBloomFilterForArchives" required="false">
-        <p>If this is <code>true</code> then a bloom filter will be used to
-        speed up archive lookups. This can be beneficial to the deployment
-        speed to web applications that contain very large amount of JARs.</p>
-        <p>If not specified, the default value of <code>false</code> will be
-        used.</p>
-      </attribute>
-
       <attribute name="useHttpOnly" required="false">
        <p>Should the HttpOnly flag be set on session cookies to prevent client
           side script from accessing the session ID? Defaults to
@@ -799,6 +791,10 @@
         therefore requires that the command line option
         <code>-XaddExports:java.base/java.io=ALL-UNNAMED</code> is set. If not
         specified, the default value of <code>true</code> will be used.</p>
+        <p>The memory leak associated with <code>ObjectStreamClass</code> has
+        been fixed in Java 19 onwards, Java 17.0.4 onwards and Java 11.0.16
+        onwards. The check will be disabled when running on a version
+        of Java that contains the fix.</p>
       </attribute>
 
       <attribute name="clearReferencesRmiTargets" required="false">
@@ -1151,7 +1147,7 @@
 
       <attribute name="value" required="true">
         <p>The parameter value that will be presented to the application
-        when requested from the JNDI context.  This value must be convertable
+        when requested from the JNDI context.  This value must be convertible
         to the Java type defined by the <code>type</code> attribute.</p>
       </attribute>
 

@@ -22,10 +22,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Identifies a POJO as a managed bean.
+ *
  * @since Common Annotations 1.1
+ *
+ * @deprecated This will be removed no earlier than Jakarta EE 11. Use CDI beans
+ *             instead.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@Deprecated(since = "2.1.1", forRemoval = true)
 public @interface ManagedBean {
     /**
      * @return Name of the managed bean

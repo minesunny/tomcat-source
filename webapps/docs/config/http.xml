@@ -59,7 +59,7 @@
   received, Tomcat will accept new connections until the current number of
   connections reaches <code>maxConnections</code>. Connections are queued inside
   the server socket created by the <strong>Connector</strong> until a thread
-  becomes avaialble to process the connection. Once <code>maxConnections</code>
+  becomes available to process the connection. Once <code>maxConnections</code>
   has been reached the operating system will queue further connections. The size
   of the  operating system provided connection queue may be controlled by the
   <code>acceptCount</code> attribute. If the operating system queue fills,
@@ -85,7 +85,11 @@
 
     <attribute name="allowTrace" required="false">
       <p>A boolean value which can be used to enable or disable the TRACE
-      HTTP method. If not specified, this attribute is set to false.</p>
+      HTTP method. If not specified, this attribute is set to false. As per RFC
+      7231 section 4.3.8, cookie and authorization headers will be excluded from
+      the response to the TRACE request. If you wish to include these, you can
+      implement the <code>doTrace()</code> method for the target Servlet and
+      gain full control over the response.</p>
     </attribute>
 
     <attribute name="asyncTimeout" required="false">
@@ -171,7 +175,7 @@
       expires. For HTTP/1.1 upgrade, the request body is buffered for the
       duration of the upgrade process. The limit can be disabled by setting this
       attribute to -1. Setting the attribute to zero will disable the saving of
-      the requets body data during authentication and HTTP/1.1 upgrade. If not
+      the request body data during authentication and HTTP/1.1 upgrade. If not
       specified, this attribute is set to 4096 (4 kilobytes).</p>
     </attribute>
 
@@ -508,20 +512,33 @@
     </attribute>
 
     <attribute name="maxHttpHeaderSize" required="false">
-      <p>The maximum size of the request and response HTTP header, specified
-      in bytes. If not specified, this attribute is set to 8192 (8 KB).</p>
+      <p>Provides the default value for
+      <strong>maxHttpRequestHeaderSize</strong> and
+      <strong>maxHttpResponseHeaderSize</strong>. If not specified, this
+      attribute is set to 8192 (8 KB).</p>
     </attribute>
 
     <attribute name="maxHttpRequestHeaderSize" required="false">
-      <p>The maximum size of the request HTTP header, specified
-      in bytes. If not specified, this attribute is set to the value of
-      the <code>maxHttpHeaderSize</code> attribute.</p>
+      <p>The maximum permitted size of the request line and headers associated
+      with an HTTP request, specified in bytes. This is compared to the number
+      of bytes received so includes line terminators and whitespace as well as
+      the request line, header names and header values. If not specified, this
+      attribute is set to the value of the <code>maxHttpHeaderSize</code>
+      attribute.</p>
+      <p>If you see "Request header is too large" errors you can increase this,
+      but be aware that Tomcat will allocate the full amount you specify for
+      every request. For example, if you specify a maxHttpRequestHeaderSize of
+      1 MB and your application handles 100 concurrent requests, you will see
+      100 MB of heap consumed by request headers.</p>
     </attribute>
 
     <attribute name="maxHttpResponseHeaderSize" required="false">
-      <p>The maximum size of the response HTTP header, specified
-      in bytes. If not specified, this attribute is set to the value of
-      the <code>maxHttpHeaderSize</code> attribute.</p>
+      <p>The maximum permitted size of the response line and headers associated
+      with an HTTP response, specified in bytes. This is compared to the number
+      of bytes written so includes line terminators and whitespace as well as
+      the status line, header names and header values. If not specified, this
+      attribute is set to the value of the <code>maxHttpHeaderSize</code>
+      attribute.</p>
     </attribute>
 
     <attribute name="maxKeepAliveRequests" required="false">
@@ -1147,19 +1164,10 @@
   <strong>Certificate</strong>. The types of the <strong>Certificate</strong>s
   must be unique.</p>
 
-  <p>As of Tomcat 8.5, the majority of the SSL configuration attributes in the
-  <strong>Connector</strong> are deprecated. If specified, they will be used to
-  configure a <strong>SSLHostConfig</strong> and <strong>Certificate</strong>
-  for the <code>defaultSSLHostConfigName</code>. Note that if an explicit
-  <strong>SSLHostConfig</strong> element also exists for the
-  <code>defaultSSLHostConfigName</code> then that will be treated as a configuration
-  error. It is expected that Tomcat 10 will drop support for the SSL
-  configuration attributes in the <strong>Connector</strong>.</p>
-
   <p>In addition to the standard TLS related request attributes defined in
   section 3.10 of the Servlet specification, Tomcat supports a number of
   additional TLS related attributes. The full list may be found in the <a
-  href="http://tomcat.apache.org/tomcat-10.1-doc/api/index.html">SSLSupport
+  href="http://tomcat.apache.org/tomcat-11.0-doc/api/index.html">SSLSupport
   Javadoc</a>.</p>
 
   <p>For more information, see the
@@ -1421,7 +1429,7 @@
 
   <attributes>
 
-    <attribute name="certificateFile" required="true">
+    <attribute name="certificateFile" required="false">
       <p>Name of the file that contains the server certificate. The format is
       PEM-encoded. Relative paths will be resolved against
       <code>$CATALINA_BASE</code>.</p>
@@ -1430,6 +1438,8 @@
       generated by <code>openssl dhparam</code> and <code>openssl ecparam</code>,
       respectively. The output of the respective OpenSSL command can simply
       be concatenated to the certificate file.</p>
+      <p>This attribute is required unless
+      <strong>certificateKeystoreFile</strong> is specified.</p>
     </attribute>
 
     <attribute name="certificateChainFile" required="false">
@@ -1482,6 +1492,8 @@
       When using a domain keystore (<code>keystoreType</code> of
       <code>DKS</code>), this parameter should be the URI to the domain
       keystore.</p>
+      <p>This attribute is required unless
+      <strong>certificateFile</strong> is specified.</p>
     </attribute>
 
     <attribute name="certificateKeystorePassword" required="false">

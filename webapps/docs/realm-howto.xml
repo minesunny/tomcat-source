@@ -47,7 +47,7 @@ to authenticate themselves.  If you are not utilizing these features, you can
 safely skip this document.</p>
 
 <p>For fundamental background information about container managed security,
-see the <a href="https://cwiki.apache.org/confluence/display/tomcat/Specifications">Servlet
+see the <a href="https://cwiki.apache.org/confluence/display/TOMCAT/Specifications">Servlet
 Specification (Version 2.4)</a>, Section 12.</p>
 
 <p>For information about utilizing the <em>Single Sign On</em> feature of
@@ -848,7 +848,7 @@ to all virtual hosts and web applications.  The default contents of the
     with all its roles. The cached user is <strong>not</strong> saved and
     restored across sessions serialisations. When the user's principal object
     is serialized for any reason, it will also be replaced by a static
-    equivalent object with roles that will no longer reflect the databse
+    equivalent object with roles that will no longer reflect the database
     contents.</li>
 </ul>
 

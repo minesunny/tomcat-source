@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -80,8 +79,9 @@ public class StandardRoot extends LifecycleMBeanBase implements WebResourceRoot 
     private ObjectName cacheJmxName = null;
 
     private boolean trackLockedFiles = false;
-    private final Set<TrackedWebResource> trackedResources =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<TrackedWebResource> trackedResources = ConcurrentHashMap.newKeySet();
+
+    private ArchiveIndexStrategy archiveIndexStrategy = ArchiveIndexStrategy.SIMPLE;
 
     // Constructs to make iteration over all WebResourceSets simpler
     private final List<WebResourceSet> mainResources = new ArrayList<>();
@@ -555,6 +555,21 @@ public class StandardRoot extends LifecycleMBeanBase implements WebResourceRoot 
     @Override
     public boolean getTrackLockedFiles() {
         return trackLockedFiles;
+    }
+
+    @Override
+    public void setArchiveIndexStrategy(String archiveIndexStrategy) {
+        this.archiveIndexStrategy = ArchiveIndexStrategy.valueOf(archiveIndexStrategy.toUpperCase(Locale.ENGLISH));
+    }
+
+    @Override
+    public String getArchiveIndexStrategy() {
+        return this.archiveIndexStrategy.name();
+    }
+
+    @Override
+    public ArchiveIndexStrategy getArchiveIndexStrategyEnum() {
+        return this.archiveIndexStrategy;
     }
 
     public List<String> getTrackedResources() {
